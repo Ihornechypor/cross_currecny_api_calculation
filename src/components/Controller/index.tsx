@@ -1,7 +1,7 @@
 import { ReactNode, useState, useEffect } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { compareAsc, format } from 'date-fns';
+import { format } from 'date-fns';
 
 interface ControllerProps {
   children?: ReactNode;
@@ -30,9 +30,10 @@ const Controller = ({ children }: ControllerProps) => {
   };
 
   const handleSubmit = () => {
-    const fee = ammount * rate * 0.01;
-    const amFree = ammount * rate - fee;
-    setRates((prev) => [...prev, { fee: fee, amFree: amFree }]);
+    const invoicePricePln = ammount * rate;
+    const invoiceFee = invoicePricePln * 0.1;
+    const invoiceVat = invoiceFee * 0.23;
+    setRates((prev) => [...prev, { invoicePricePln, invoiceFee, invoiceVat }]);
   };
 
   return (
@@ -48,15 +49,24 @@ const Controller = ({ children }: ControllerProps) => {
       />{' '}
       <br />
       <button onClick={handleSubmit}>Claculate price</button>
-      <ul>
-        {rates.map((item, index) => {
-          return (
-            <li key={index}>
-              fee: {item.fee}; clearAmmount: {item.amFree}
-            </li>
-          );
-        })}
-      </ul>
+      <table>
+        <tbody>
+          <tr>
+            <th>Total:</th>
+            <th>Fee:</th>
+            <th>VAT:</th>
+          </tr>
+          {rates.map((item, index) => {
+            return (
+              <tr key={index}>
+                <td> {item.invoicePricePln}</td>
+                <td> {item.invoiceFee}</td>
+                <td> {item.invoiceVat}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </>
   );
 };
