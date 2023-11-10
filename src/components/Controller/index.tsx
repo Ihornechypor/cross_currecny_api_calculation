@@ -1,5 +1,6 @@
 import { ReactNode, useState, useEffect } from 'react';
 import DatePicker from 'react-datepicker';
+import { getCurrecyRate } from '../../api/getCurrecyRate';
 import 'react-datepicker/dist/react-datepicker.css';
 import { format } from 'date-fns';
 
@@ -10,19 +11,20 @@ const Controller = ({ children }: ControllerProps) => {
   const [rate, setRate] = useState(0);
   const [startDate, setStartDate] = useState(null);
   const [ammount, setAmmount] = useState(null);
-  const [api, setApi] = useState(null);
 
   const [rates, setRates] = useState([]);
 
   useEffect(() => {
-    fetch(api)
-      .then((response) => response.json())
-      .then((data) => {
-        setRate(data.rates[0].mid);
-      })
-      .catch((err) => {
-        console.log(err.message);
-      });
+    const fetchData = async () => {
+      try {
+        const data = await getCurrecyRate(startDate);
+        console.log(data);
+      } catch (error) {
+        // Handle errors if necessary
+      }
+    };
+
+    fetchData();
   }, [startDate]);
 
   const handleAmmount = (e) => {
@@ -43,8 +45,7 @@ const Controller = ({ children }: ControllerProps) => {
       <DatePicker
         selected={startDate}
         onChange={(date) => {
-          setStartDate(date);
-          setApi(`http://api.nbp.pl/api/exchangerates/rates/a/usd/${format(date, 'yyyy-MM-dd')}/?format=json`);
+          setStartDate(format(date, 'yyyy-MM-dd'));
         }}
       />{' '}
       <br />
