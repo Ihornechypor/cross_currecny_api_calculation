@@ -2,34 +2,33 @@ import { ReactNode, useState, useEffect } from 'react';
 import DatePicker from 'react-datepicker';
 import { getCurrecyRate } from '../../api/getCurrecyRate';
 import 'react-datepicker/dist/react-datepicker.css';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 interface ControllerProps {
   children?: ReactNode;
 }
 const Controller = ({ children }: ControllerProps) => {
   const [rate, setRate] = useState(0);
-  const [startDate, setStartDate] = useState(null);
-  const [ammount, setAmmount] = useState(null);
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [formatDate, setFormatDate] = useState('');
+  const [ammount, setAmmount] = useState(0);
 
   const [rates, setRates] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await getCurrecyRate(startDate);
-        console.log(data);
+        const data = await getCurrecyRate(formatDate);
+        setRate(data);
       } catch (error) {
         // Handle errors if necessary
       }
     };
 
     fetchData();
-  }, [startDate]);
+  }, [formatDate]);
 
-  const handleAmmount = (e) => {
-    setAmmount(e.target.value);
-  };
+  const handleAmmount = (e: any) => setAmmount(e.target.value);
 
   const handleSubmit = () => {
     const invoicePricePln = ammount * rate;
@@ -38,16 +37,16 @@ const Controller = ({ children }: ControllerProps) => {
     setRates((prev) => [...prev, { invoicePricePln, invoiceFee, invoiceVat }]);
   };
 
+  const handleDate = (date: any) => {
+    setStartDate(date);
+    setFormatDate(format(date, 'yyyy-MM-dd'));
+  };
+
   return (
     <>
-      <p>{rate}</p>
+      <p>Currensy: {rate}</p>
       <input type="number" placeholder="ammount" onChange={handleAmmount} /> <br />
-      <DatePicker
-        selected={startDate}
-        onChange={(date) => {
-          setStartDate(format(date, 'yyyy-MM-dd'));
-        }}
-      />{' '}
+      <DatePicker selected={startDate} placeholderText="pick the date" dateFormat="yyyy-MM-dd" onChange={handleDate} />
       <br />
       <button onClick={handleSubmit}>Claculate price</button>
       <table>
