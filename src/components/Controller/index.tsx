@@ -8,6 +8,8 @@ interface ControllerProps {
   children?: ReactNode;
 }
 const Controller = ({ children }: ControllerProps) => {
+  const [hasMounted, setHasMounted] = useState(false);
+
   const [rate, setRate] = useState(0);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [formatDate, setFormatDate] = useState('');
@@ -16,16 +18,20 @@ const Controller = ({ children }: ControllerProps) => {
   const [rates, setRates] = useState([]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const data = await getCurrecyRate(formatDate);
-        setRate(data);
-      } catch (error) {
-        // Handle errors if necessary
-      }
-    };
-
-    fetchData();
+    if (hasMounted) {
+      const fetchData = async () => {
+        try {
+          const data = await getCurrecyRate(formatDate);
+          setRate(data);
+          console.log(data);
+        } catch (error) {
+          // Handle errors if necessary
+        }
+      };
+      fetchData();
+    } else {
+      setHasMounted(true);
+    }
   }, [formatDate]);
 
   const handleAmmount = (e: any) => setAmmount(e.target.value);
@@ -44,7 +50,10 @@ const Controller = ({ children }: ControllerProps) => {
 
   return (
     <>
-      <p>Currensy: {rate}</p>
+      <p>
+        Currensy: {rate} <br />
+        Date: {formatDate}
+      </p>
       <input type="number" placeholder="ammount" onChange={handleAmmount} /> <br />
       <DatePicker selected={startDate} placeholderText="pick the date" dateFormat="yyyy-MM-dd" onChange={handleDate} />
       <br />
