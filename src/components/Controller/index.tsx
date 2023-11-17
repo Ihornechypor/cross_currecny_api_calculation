@@ -15,48 +15,53 @@ const Controller = ({ children }: ControllerProps) => {
   // csv
   const [csvData, setCsvData] = useState('');
   const [dataArray, setDataArray] = useState([]);
-  const [subDaysCount, setSubDaysCount] = useState(1);
 
-  const findDateWithCurrensy = () => {
-    if (subDaysCount > 5) return;
+  const updateSubDays = (date: string, day: number) => subDays(parse(date, 'MMM d, yyyy', new Date()), day);
 
-    setSubDaysCount((prev) => prev + 1);
-    const desireDays = subDays(startDate, subDaysCount);
-    setFormatDate(format(desireDays, 'yyyy-MM-dd'));
-  };
+  const formatedDate = (date: string) => format(date, 'yyyy-MM-dd');
 
-  const handleDate = (date: any) => {
-    const prevDate = subDays(parse(date, 'MMM d, yyyy', new Date()), 1);
-    setFormatDate(format(prevDate, 'yyyy-MM-dd'));
-    return format(prevDate, 'yyyy-MM-dd');
-  };
+  const parseDay = (date: string) => parse(date, 'MMM d, yyyy', new Date());
 
-  const fetchData = async () => {
-    try {
-      const data = await getCurrecyRate(formatDate);
-      console.log('fetching');
-      setRate(data);
-      console.log(data);
-    } catch (error) {
-      findDateWithCurrensy();
+  // const findDateWithCurrensy = (date: any) => {
+  //   const prevDate = ;
+
+  //   return prevDate;
+  // };
+
+  const fetchData = async (formatDate: string) => {
+    const currentDate = formatDate;
+    let retryCount = 0;
+    let data;
+
+    while (retryCount < 5) {
+      try {
+        const data = await getCurrecyRate(currentDate);
+        setRate(data);
+        break;
+      } catch (error) {
+        currentDate = subDays(parse(currentDate, 'yyyy-MM-dd', new Date()), 1);
+        retryCount++;
+      }
     }
   };
 
-  useEffect(() => {
-    if (hasMounted) {
-      fetchData();
-    } else {
-      setHasMounted(true);
-    }
-  }, [formatDate]);
+  const handleDate = async (date: any) => {
+    const prevDate = updateSubDays(date, 1);
+    setFormatDate(formatedDate(prevDate));
+    fetchData(formatedDate(prevDate));
 
-  const handleSubmit = () => {
-    const invoicePricePln = ammount * rate;
-    const invoiceFee = invoicePricePln * 0.1;
-    const invoiceVat = invoiceFee * 0.23;
-
-    console.log(dataArray);
+    return '';
   };
+
+  // const handleSubmit = () => {
+  //   const invoicePricePln = ammount * rate;
+  //   const invoiceFee = invoicePricePln * 0.1;
+  //   const invoiceVat = invoiceFee * 0.23;
+
+  //   console.log(dataArray);
+  // };
+
+  const handleReset = () => setDataArray([]);
 
   const handleCsvInputChange = (e) => {
     setCsvData(e.target.value);
@@ -69,11 +74,8 @@ const Controller = ({ children }: ControllerProps) => {
         const filteredArray = result.data.map((obj) => ({
           ...obj,
           formatedDate: handleDate(obj.Date),
-          currensyRate: fetchData(),
+          currensyRate: rate,
         }));
-
-        console.log(filteredArray);
-
         setDataArray(filteredArray);
       },
       header: true, // Set this to true if your CSV has headers
@@ -84,11 +86,13 @@ const Controller = ({ children }: ControllerProps) => {
     <>
       <p>
         Currensy: <br />
-        Date:
+        Date: {formatDate}
       </p>
       <br />
       <textarea value={csvData} onChange={handleCsvInputChange} placeholder="Paste CSV data here" rows={5} cols={50} />
+      <br />
       <button onClick={parseCSVToArray}>Load csv</button>
+      <button onClick={handleReset}>Reset List</button>
       <table>
         <tbody>
           <tr>
@@ -104,7 +108,7 @@ const Controller = ({ children }: ControllerProps) => {
             <tr key={index}>
               <th>{item.Date}</th>
               <th>{item.formatedDate}</th>
-              <th></th>
+              <th>{item.currensyRate}</th>
               <th>{item.Amount}</th>
               <th></th>
               <th></th>
