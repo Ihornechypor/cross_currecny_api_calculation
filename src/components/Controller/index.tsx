@@ -2,20 +2,32 @@ import { ReactNode, useState, useEffect } from 'react';
 import DatePicker from 'react-datepicker';
 import { getCurrecyRate } from '../../api/getCurrecyRate';
 import 'react-datepicker/dist/react-datepicker.css';
-import { format, parseISO } from 'date-fns';
+import { format, subDays } from 'date-fns';
 
 interface ControllerProps {
   children?: ReactNode;
 }
 const Controller = ({ children }: ControllerProps) => {
   const [hasMounted, setHasMounted] = useState(false);
-
   const [rate, setRate] = useState(0);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [formatDate, setFormatDate] = useState('');
   const [ammount, setAmmount] = useState(0);
-
   const [rates, setRates] = useState([]);
+
+  const [subDaysCount, setSubDaysCount] = useState(1);
+
+  const handleDate = (date: any) => {
+    const prevDate = subDays(date, 1);
+    setStartDate(prevDate);
+    setFormatDate(format(prevDate, 'yyyy-MM-dd'));
+  };
+
+  const findDateWithCurrensy = () => {
+    setSubDaysCount((prev) => prev + 1);
+    const desireDays = subDays(startDate, subDaysCount);
+    setFormatDate(format(desireDays, 'yyyy-MM-dd'));
+  };
 
   useEffect(() => {
     if (hasMounted) {
@@ -25,7 +37,7 @@ const Controller = ({ children }: ControllerProps) => {
           setRate(data);
           console.log(data);
         } catch (error) {
-          // Handle errors if necessary
+          findDateWithCurrensy();
         }
       };
       fetchData();
@@ -41,11 +53,6 @@ const Controller = ({ children }: ControllerProps) => {
     const invoiceFee = invoicePricePln * 0.1;
     const invoiceVat = invoiceFee * 0.23;
     setRates((prev) => [...prev, { invoicePricePln, invoiceFee, invoiceVat }]);
-  };
-
-  const handleDate = (date: any) => {
-    setStartDate(date);
-    setFormatDate(format(date, 'yyyy-MM-dd'));
   };
 
   return (
