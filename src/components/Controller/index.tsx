@@ -1,8 +1,8 @@
 import { ReactNode, useState, useEffect } from 'react';
-import DatePicker from 'react-datepicker';
 import { getCurrecyRate } from '../../api/getCurrecyRate';
 import 'react-datepicker/dist/react-datepicker.css';
-import { format, subDays } from 'date-fns';
+import { format, subDays, parse } from 'date-fns';
+import Papa from 'papaparse';
 
 interface ControllerProps {
   children?: ReactNode;
@@ -10,77 +10,107 @@ interface ControllerProps {
 const Controller = ({ children }: ControllerProps) => {
   const [hasMounted, setHasMounted] = useState(false);
   const [rate, setRate] = useState(0);
-  const [startDate, setStartDate] = useState<Date | null>(null);
   const [formatDate, setFormatDate] = useState('');
   const [ammount, setAmmount] = useState(0);
-  const [rates, setRates] = useState([]);
-
+  // csv
+  const [csvData, setCsvData] = useState('');
+  const [dataArray, setDataArray] = useState([]);
   const [subDaysCount, setSubDaysCount] = useState(1);
 
-  const handleDate = (date: any) => {
-    const prevDate = subDays(date, 1);
-    setStartDate(prevDate);
-    setFormatDate(format(prevDate, 'yyyy-MM-dd'));
-  };
-
   const findDateWithCurrensy = () => {
+    if (subDaysCount > 5) return;
+
     setSubDaysCount((prev) => prev + 1);
     const desireDays = subDays(startDate, subDaysCount);
     setFormatDate(format(desireDays, 'yyyy-MM-dd'));
   };
 
+  const handleDate = (date: any) => {
+    const prevDate = subDays(parse(date, 'MMM d, yyyy', new Date()), 1);
+    setFormatDate(format(prevDate, 'yyyy-MM-dd'));
+    return format(prevDate, 'yyyy-MM-dd');
+  };
+
+  const fetchData = async () => {
+    try {
+      const data = await getCurrecyRate(formatDate);
+      console.log('fetching');
+      setRate(data);
+      console.log(data);
+    } catch (error) {
+      findDateWithCurrensy();
+    }
+  };
+
   useEffect(() => {
     if (hasMounted) {
-      const fetchData = async () => {
-        try {
-          const data = await getCurrecyRate(formatDate);
-          setRate(data);
-          console.log(data);
-        } catch (error) {
-          findDateWithCurrensy();
-        }
-      };
       fetchData();
     } else {
       setHasMounted(true);
     }
   }, [formatDate]);
 
-  const handleAmmount = (e: any) => setAmmount(e.target.value);
-
   const handleSubmit = () => {
     const invoicePricePln = ammount * rate;
     const invoiceFee = invoicePricePln * 0.1;
     const invoiceVat = invoiceFee * 0.23;
-    setRates((prev) => [...prev, { invoicePricePln, invoiceFee, invoiceVat }]);
+
+    console.log(dataArray);
+  };
+
+  const handleCsvInputChange = (e) => {
+    setCsvData(e.target.value);
+  };
+
+  const parseCSVToArray = () => {
+    Papa.parse(csvData, {
+      complete: (result) => {
+        console.log(result.data);
+        const filteredArray = result.data.map((obj) => ({
+          ...obj,
+          formatedDate: handleDate(obj.Date),
+          currensyRate: fetchData(),
+        }));
+
+        console.log(filteredArray);
+
+        setDataArray(filteredArray);
+      },
+      header: true, // Set this to true if your CSV has headers
+    });
   };
 
   return (
     <>
       <p>
-        Currensy: {rate} <br />
-        Date: {formatDate}
+        Currensy: <br />
+        Date:
       </p>
-      <input type="number" placeholder="ammount" onChange={handleAmmount} /> <br />
-      <DatePicker selected={startDate} placeholderText="pick the date" dateFormat="yyyy-MM-dd" onChange={handleDate} />
       <br />
-      <button onClick={handleSubmit}>Claculate price</button>
+      <textarea value={csvData} onChange={handleCsvInputChange} placeholder="Paste CSV data here" rows={5} cols={50} />
+      <button onClick={parseCSVToArray}>Load csv</button>
       <table>
         <tbody>
           <tr>
-            <th>Total:</th>
-            <th>Fee:</th>
-            <th>VAT:</th>
+            <th>Date:</th>
+            <th>DateCurency:</th>
+            <th>CurrencyRate:</th>
+            <th>Ammount in USD:</th>
+            <th>Ammount in PLN:</th>
+            <th>Fee in PLN:</th>
+            <th>Fee VAT in PLN:</th>
           </tr>
-          {rates.map((item, index) => {
-            return (
-              <tr key={index}>
-                <td> {item.invoicePricePln}</td>
-                <td> {item.invoiceFee}</td>
-                <td> {item.invoiceVat}</td>
-              </tr>
-            );
-          })}
+          {dataArray.map((item, index) => (
+            <tr key={index}>
+              <th>{item.Date}</th>
+              <th>{item.formatedDate}</th>
+              <th></th>
+              <th>{item.Amount}</th>
+              <th></th>
+              <th></th>
+              <th></th>
+            </tr>
+          ))}
         </tbody>
       </table>
     </>
