@@ -9,7 +9,7 @@ interface ControllerProps {
 }
 const Controller = ({ children }: ControllerProps) => {
   const [hasMounted, setHasMounted] = useState(false);
-  const [rate, setRate] = useState(0);
+  const [rate, setRate] = useState([]);
   const [formatDate, setFormatDate] = useState('');
   const [ammount, setAmmount] = useState(0);
   // csv
@@ -29,29 +29,40 @@ const Controller = ({ children }: ControllerProps) => {
   // };
 
   const fetchData = async (formatDate: string) => {
-    const currentDate = formatDate;
+    let currentDate = formatDate;
     let retryCount = 0;
-    let data;
 
     while (retryCount < 5) {
       try {
         const data = await getCurrecyRate(currentDate);
-        setRate(data);
+
+        console.log(data);
+        setRate((prev) => [...prev, { formatDate, ...data }]);
         break;
       } catch (error) {
-        currentDate = subDays(parse(currentDate, 'yyyy-MM-dd', new Date()), 1);
+        const subDay = subDays(parse(currentDate, 'yyyy-MM-dd', new Date()), 1);
+
+        currentDate = formatedDate(subDay);
         retryCount++;
       }
     }
   };
 
-  const handleDate = async (date: any) => {
+  const handleDate = (date: any) => {
     const prevDate = updateSubDays(date, 1);
     setFormatDate(formatedDate(prevDate));
     fetchData(formatedDate(prevDate));
 
-    return '';
+    return formatedDate(prevDate);
   };
+
+  useEffect(() => {
+    if (hasMounted) {
+      console.log(rate);
+    } else {
+      setHasMounted(true);
+    }
+  }, [rate]);
 
   // const handleSubmit = () => {
   //   const invoicePricePln = ammount * rate;
@@ -72,11 +83,12 @@ const Controller = ({ children }: ControllerProps) => {
       complete: (result) => {
         console.log(result.data);
         const filteredArray = result.data.map((obj) => ({
-          ...obj,
           formatedDate: handleDate(obj.Date),
-          currensyRate: rate,
+          currecyRate: '',
+          currecyDate: '',
         }));
-        setDataArray(filteredArray);
+        // setDataArray(filteredArray);
+        setRate(filteredArray);
       },
       header: true, // Set this to true if your CSV has headers
     });
@@ -104,9 +116,9 @@ const Controller = ({ children }: ControllerProps) => {
             <th>Fee in PLN:</th>
             <th>Fee VAT in PLN:</th>
           </tr>
-          {dataArray.map((item, index) => (
+          {rate.map((item, index) => (
             <tr key={index}>
-              <th>{item.Date}</th>
+              <th>{item.date}</th>
               <th>{item.formatedDate}</th>
               <th>{item.currensyRate}</th>
               <th>{item.Amount}</th>
