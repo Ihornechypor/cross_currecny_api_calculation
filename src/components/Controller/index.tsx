@@ -11,7 +11,7 @@ const Controller = ({ children }: ControllerProps) => {
   const [hasMounted, setHasMounted] = useState(false);
   const [rate, setRate] = useState([]);
   const [formatDate, setFormatDate] = useState('');
-  const [ammount, setAmmount] = useState(0);
+  const [amount, setAmmount] = useState(0);
   // csv
   const [csvData, setCsvData] = useState('');
   const [dataArray, setDataArray] = useState([]);
@@ -22,22 +22,34 @@ const Controller = ({ children }: ControllerProps) => {
 
   const parseDay = (date: string) => parse(date, 'MMM d, yyyy', new Date());
 
-  // const findDateWithCurrensy = (date: any) => {
-  //   const prevDate = ;
+  const calculateLocalAmounts = (amount: number, rate: number) => {
+    const amountFee = +(amount * 0.1).toFixed(2);
+    const amountLocal = +(amount * rate).toFixed(2);
+    const amountFeeLocal = +(amountLocal * 0.1).toFixed(2);
+    const amountFeeVat = +(amountFeeLocal * 0.23).toFixed(2);
 
-  //   return prevDate;
-  // };
+    return {
+      amountFee,
+      amountLocal,
+      amountFeeLocal,
+      amountFeeVat,
+    };
+  };
 
-  const fetchData = async (formatDate: string) => {
-    let currentDate = formatDate;
+  const fetchData = async (formatedDate: string) => {
+    let currentDate = formatedDate;
     let retryCount = 0;
 
     while (retryCount < 5) {
       try {
         const data = await getCurrecyRate(currentDate);
 
-        console.log(data);
-        setRate((prev) => [...prev, { formatDate, ...data }]);
+        setRate((prev) => {
+          const newDateArray = prev.map((item) => {
+            return { ...item, ...data, ...calculateLocalAmounts(item.amount, item.currecyRate) };
+          });
+          return newDateArray;
+        });
         break;
       } catch (error) {
         const subDay = subDays(parse(currentDate, 'yyyy-MM-dd', new Date()), 1);
@@ -64,14 +76,6 @@ const Controller = ({ children }: ControllerProps) => {
     }
   }, [rate]);
 
-  // const handleSubmit = () => {
-  //   const invoicePricePln = ammount * rate;
-  //   const invoiceFee = invoicePricePln * 0.1;
-  //   const invoiceVat = invoiceFee * 0.23;
-
-  //   console.log(dataArray);
-  // };
-
   const handleReset = () => setDataArray([]);
 
   const handleCsvInputChange = (e) => {
@@ -83,9 +87,11 @@ const Controller = ({ children }: ControllerProps) => {
       complete: (result) => {
         console.log(result.data);
         const filteredArray = result.data.map((obj) => ({
+          initialDate: obj.Date,
           formatedDate: handleDate(obj.Date),
-          currecyRate: '',
           currecyDate: '',
+          currecyRate: '',
+          amount: Number(obj.Amount),
         }));
         // setDataArray(filteredArray);
         setRate(filteredArray);
@@ -108,23 +114,27 @@ const Controller = ({ children }: ControllerProps) => {
       <table>
         <tbody>
           <tr>
-            <th>Date:</th>
-            <th>DateCurency:</th>
-            <th>CurrencyRate:</th>
-            <th>Ammount in USD:</th>
-            <th>Ammount in PLN:</th>
-            <th>Fee in PLN:</th>
-            <th>Fee VAT in PLN:</th>
+            <th>CSV Date:</th>
+            <th>Formated Date:</th>
+            <th>Currecy Date:</th>
+            <th>Currecy Rate:</th>
+            <th>Amount in USD:</th>
+            <th>Amount fee in USD:</th>
+            <th>Amount in PLN:</th>
+            <th>Amount Fee in PLN:</th>
+            <th>Amount Fee VAT in PLN:</th>
           </tr>
           {rate.map((item, index) => (
             <tr key={index}>
-              <th>{item.date}</th>
+              <th>{item.initialDate}</th>
               <th>{item.formatedDate}</th>
-              <th>{item.currensyRate}</th>
-              <th>{item.Amount}</th>
-              <th></th>
-              <th></th>
-              <th></th>
+              <th>{item.currecyDate}</th>
+              <th>{item.currecyRate}</th>
+              <th>{item.amount}</th>
+              <th>{item.amountFee}</th>
+              <th>{item.amountLocal}</th>
+              <th>{item.amountFeeLocal}</th>
+              <th>{item.amountFeeVat}</th>
             </tr>
           ))}
         </tbody>
