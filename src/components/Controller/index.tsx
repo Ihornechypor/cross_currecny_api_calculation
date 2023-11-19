@@ -7,34 +7,32 @@ import Papa from 'papaparse';
 interface ControllerProps {
   children?: ReactNode;
 }
+
+const updateSubDays = (date: string, day: number) => subDays(parse(date, 'MMM d, yyyy', new Date()), day);
+
+const formatedDate = (date: string) => format(date, 'yyyy-MM-dd');
+
+const calculateLocalAmounts = (amount: number, rate: number) => {
+  const amountFee = +(amount * 0.1).toFixed(2);
+  const amountLocal = +(amount * rate).toFixed(2);
+  const amountFeeLocal = +(amountLocal * 0.1).toFixed(2);
+  const amountFeeVat = +(amountFeeLocal * 0.23).toFixed(2);
+
+  return {
+    amountFee,
+    amountLocal,
+    amountFeeLocal,
+    amountFeeVat,
+  };
+};
+
 const Controller = ({ children }: ControllerProps) => {
   const [hasMounted, setHasMounted] = useState(false);
   const [rate, setRate] = useState([]);
-  const [formatDate, setFormatDate] = useState('');
-  const [amount, setAmmount] = useState(0);
+  const [formatDate, setFormatDate] = useState();
+  const [apiData, setApiData] = useState({});
   // csv
-  const [csvData, setCsvData] = useState('');
-  const [dataArray, setDataArray] = useState([]);
-
-  const updateSubDays = (date: string, day: number) => subDays(parse(date, 'MMM d, yyyy', new Date()), day);
-
-  const formatedDate = (date: string) => format(date, 'yyyy-MM-dd');
-
-  const parseDay = (date: string) => parse(date, 'MMM d, yyyy', new Date());
-
-  const calculateLocalAmounts = (amount: number, rate: number) => {
-    const amountFee = +(amount * 0.1).toFixed(2);
-    const amountLocal = +(amount * rate).toFixed(2);
-    const amountFeeLocal = +(amountLocal * 0.1).toFixed(2);
-    const amountFeeVat = +(amountFeeLocal * 0.23).toFixed(2);
-
-    return {
-      amountFee,
-      amountLocal,
-      amountFeeLocal,
-      amountFeeVat,
-    };
-  };
+  const [csvData, setCsvData] = useState();
 
   const fetchData = async (formatedDate: string) => {
     let currentDate = formatedDate;
@@ -42,14 +40,10 @@ const Controller = ({ children }: ControllerProps) => {
 
     while (retryCount < 5) {
       try {
-        const data = await getCurrecyRate(currentDate);
+        const data = await getCurrecyRate(currentDate, formatedDate);
+        console.log(data);
 
-        setRate((prev) => {
-          const newDateArray = prev.map((item) => {
-            return { ...item, ...data, ...calculateLocalAmounts(item.amount, item.currecyRate) };
-          });
-          return newDateArray;
-        });
+        setApiData({ ...data });
         break;
       } catch (error) {
         const subDay = subDays(parse(currentDate, 'yyyy-MM-dd', new Date()), 1);
@@ -70,13 +64,24 @@ const Controller = ({ children }: ControllerProps) => {
 
   useEffect(() => {
     if (hasMounted) {
-      console.log(rate);
+      setRate((prev) => {
+        const newDateArray = prev.map((item) => {
+          if (item.formatedDate === apiData.formatedDate) {
+            return { ...item, ...apiData, ...calculateLocalAmounts(item.amount, apiData.currecyRate) };
+          }
+          return { ...item };
+        });
+        return newDateArray;
+      });
     } else {
       setHasMounted(true);
     }
-  }, [rate]);
+  }, [apiData]);
 
-  const handleReset = () => setDataArray([]);
+  const handleReset = () => {
+    setRate([]);
+    setApiData([]);
+  };
 
   const handleCsvInputChange = (e) => {
     setCsvData(e.target.value);
@@ -85,15 +90,12 @@ const Controller = ({ children }: ControllerProps) => {
   const parseCSVToArray = () => {
     Papa.parse(csvData, {
       complete: (result) => {
-        console.log(result.data);
         const filteredArray = result.data.map((obj) => ({
           initialDate: obj.Date,
           formatedDate: handleDate(obj.Date),
-          currecyDate: '',
-          currecyRate: '',
           amount: Number(obj.Amount),
         }));
-        // setDataArray(filteredArray);
+
         setRate(filteredArray);
       },
       header: true, // Set this to true if your CSV has headers
