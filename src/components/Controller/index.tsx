@@ -29,20 +29,23 @@ const calculateLocalAmounts = (amount: number, rate: number) => {
 const Controller = ({ children }: ControllerProps) => {
   const [hasMounted, setHasMounted] = useState(false);
   const [rate, setRate] = useState([]);
-  const [formatDate, setFormatDate] = useState();
-  const [apiData, setApiData] = useState({});
+  const [formatDate, setFormatDate] = useState('');
+  const [apiData, setApiData] = useState([]);
   // csv
   const [csvData, setCsvData] = useState();
 
   const fetchData = async (formatedDate: string) => {
     let currentDate = formatedDate;
     const retryCount = 0;
-
     while (retryCount < 5) {
       try {
         const data = await getCurrecyRate(currentDate, formatedDate);
-        setApiData(data);
-        break;
+        if (data && data.formatedDate) {
+          setApiData((prev) => [...prev, data]);
+          break;
+        } else {
+          console.error('Empty or invalid API response');
+        }
       } catch (error) {
         const subDay = subDays(parse(currentDate, 'yyyy-MM-dd', new Date()), 1);
 
@@ -61,17 +64,21 @@ const Controller = ({ children }: ControllerProps) => {
   };
 
   useEffect(() => {
-    if (hasMounted) {
-      console.log(apiData);
-      setRate((prev) => {
-        const newDateArray = prev.map((item) => {
-          if (item.formatedDate === apiData.formatedDate) {
-            return { ...item, ...apiData, ...calculateLocalAmounts(item.amount, apiData.currecyRate) };
-          }
-          return { ...item };
-        });
-        return newDateArray;
-      });
+    if (hasMounted && apiData.length !== 0) {
+      if (apiData.length === rate.length) {
+        const sortedByDays = apiData.sort(
+          (a, b) => parse(b.formatedDate, 'yyyy-MM-dd', new Date()) - parse(a.formatedDate, 'yyyy-MM-dd', new Date()),
+        );
+        const compairedArray = rate.map((item, index) => ({
+          ...item,
+          ...sortedByDays[index],
+          ...calculateLocalAmounts(item.amount, sortedByDays[index].currecyRate),
+        }));
+
+        setRate(compairedArray);
+      } else {
+        console.error('currensy date not full');
+      }
     } else {
       setHasMounted(true);
     }
@@ -80,6 +87,7 @@ const Controller = ({ children }: ControllerProps) => {
   const handleReset = () => {
     setRate([]);
     setApiData([]);
+    console.clear();
   };
 
   const handleCsvInputChange = (e) => {
@@ -87,18 +95,22 @@ const Controller = ({ children }: ControllerProps) => {
   };
 
   const parseCSVToArray = () => {
-    Papa.parse(csvData, {
-      complete: (result) => {
-        const filteredArray = result.data.map((obj) => ({
-          initialDate: obj.Date,
-          formatedDate: handleDate(obj.Date),
-          amount: Number(obj.Amount),
-        }));
+    try {
+      Papa.parse(csvData, {
+        complete: (result) => {
+          const filteredArray = result.data.map((obj) => ({
+            initialDate: obj.Date,
+            formatedDate: handleDate(obj.Date),
+            amount: Number(obj.Amount),
+          }));
 
-        setRate(filteredArray);
-      },
-      header: true, // Set this to true if your CSV has headers
-    });
+          setRate(filteredArray);
+        },
+        header: true,
+      });
+    } catch (error) {
+      console.error('Error parsing CSV:', error);
+    }
   };
 
   return (
