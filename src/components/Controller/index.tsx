@@ -12,12 +12,21 @@ const updateSubDays = (date: string, day: number) => subDays(parse(date, 'MMM d,
 
 const formatedDate = (date: string) => format(date, 'yyyy-MM-dd');
 
-const calculateLocalAmounts = (amount: number, rate: number) => {
-  const amountFee = +(amount * 0.1).toFixed(2);
+const calculateLocalAmounts = (amount: number, rate: number, type: string) => {
+  let amountFee = +(amount * 0.1).toFixed(2);
   const amountLocal = +(amount * rate).toFixed(2);
-  const amountFeeLocal = +(amountLocal * 0.1).toFixed(2);
-  const amountFeeVat = +(amountFeeLocal * 0.23).toFixed(2);
-
+  let amountFeeLocal = -Math.abs(+(amountLocal * 0.1).toFixed(2));
+  let amountFeeVat = -Math.abs(+(amountFeeLocal * 0.23).toFixed(2));
+  if (type === 'Withdrawal Fee') {
+    amountFee = 0;
+    amountFeeLocal = 0;
+    amountFeeVat = 0;
+  }
+  if (type === 'Membership Fee') {
+    amountFee = 0;
+    amountFeeVat = 0;
+    amountFeeLocal = +(amountLocal * 0.23).toFixed(2);
+  }
   return {
     amountFee,
     amountLocal,
@@ -29,8 +38,15 @@ const calculateLocalAmounts = (amount: number, rate: number) => {
 const Controller = ({ children }: ControllerProps) => {
   const [hasMounted, setHasMounted] = useState(false);
   const [rate, setRate] = useState([]);
-  const [formatDate, setFormatDate] = useState('');
   const [apiData, setApiData] = useState([]);
+  const [totalData, setTotalData] = useState({
+    amountOfIncum: 0,
+    amountOfCosts: 0,
+    amountOfCostsWithVat: 0,
+    ammountOfFeeOfVat: 0,
+    ammoutClear: 0,
+    ammoutClearAndVat: 0,
+  });
   // csv
   const [csvData, setCsvData] = useState();
 
@@ -49,7 +65,7 @@ const Controller = ({ children }: ControllerProps) => {
       } catch (error) {
         const subDay = subDays(parse(currentDate, 'yyyy-MM-dd', new Date()), 1);
 
-        currentDate = formatedDate(subDay);
+        currentDate = format(subDay, 'yyyy-MM-dd');
         retryCount + 1;
       }
     }
@@ -57,27 +73,57 @@ const Controller = ({ children }: ControllerProps) => {
 
   const handleDate = (date: any) => {
     const prevDate = updateSubDays(date, 1);
-    setFormatDate(formatedDate(prevDate));
     fetchData(formatedDate(prevDate));
 
     return formatedDate(prevDate);
   };
 
   useEffect(() => {
-    if (hasMounted && apiData.length !== 0) {
+    if (hasMounted) {
+      const onlyPayments = rate.filter(
+        (item) => item.type === 'Fixed Price' || item.type === 'Hourly' || item.type === 'Bonus',
+      );
+
+      const amountOfIncum = onlyPayments.reduce((acc, currentValue) => acc + currentValue.amountLocal, 0);
+      const amountOfCosts = rate.reduce((acc, currentValue) => acc + currentValue.amountFeeLocal, 0);
+      const amountOfCostsWithVat = rate.reduce(
+        (acc, currentValue) => acc + currentValue.amountFeeLocal + currentValue.amountFeeVat,
+        0,
+      );
+
+      const ammountOfFeeOfVat = rate.reduce((acc, currentValue) => acc + currentValue.amountFeeVat, 0);
+
+      const ammoutClear = amountOfIncum + amountOfCosts;
+      const ammoutClearAndVat = amountOfIncum + amountOfCostsWithVat;
+
+      setTotalData({
+        amountOfIncum,
+        amountOfCosts,
+        amountOfCostsWithVat,
+        ammountOfFeeOfVat,
+        ammoutClear,
+        ammoutClearAndVat,
+      });
+    } else {
+      setHasMounted(true);
+    }
+  }, [rate]);
+
+  useEffect(() => {
+    if (hasMounted) {
       if (apiData.length === rate.length) {
         const sortedByDays = apiData.sort(
           (a, b) => parse(b.formatedDate, 'yyyy-MM-dd', new Date()) - parse(a.formatedDate, 'yyyy-MM-dd', new Date()),
         );
-        const compairedArray = rate.map((item, index) => ({
-          ...item,
-          ...sortedByDays[index],
-          ...calculateLocalAmounts(item.amount, sortedByDays[index].currecyRate),
-        }));
+        const compairedArray = rate.map((item, index) => {
+          return {
+            ...item,
+            ...sortedByDays[index],
+            ...calculateLocalAmounts(item.amount, sortedByDays[index].currecyRate, item.type),
+          };
+        });
 
         setRate(compairedArray);
-      } else {
-        console.error('currensy date not full');
       }
     } else {
       setHasMounted(true);
@@ -98,8 +144,18 @@ const Controller = ({ children }: ControllerProps) => {
     try {
       Papa.parse(csvData, {
         complete: (result) => {
-          const filteredArray = result.data.map((obj) => ({
+          const flArr = result.data.filter(
+            (item) =>
+              item.Type === 'Fixed Price' ||
+              item.Type === 'Hourly' ||
+              item.Type === 'Bonus' ||
+              item.Type === 'Membership Fee' ||
+              item.Type === 'Withdrawal Fee',
+          );
+
+          const filteredArray = flArr.map((obj) => ({
             initialDate: obj.Date,
+            type: obj.Type,
             formatedDate: handleDate(obj.Date),
             amount: Number(obj.Amount),
           }));
@@ -117,7 +173,6 @@ const Controller = ({ children }: ControllerProps) => {
     <>
       <p>
         Currensy: <br />
-        Date: {formatDate}
       </p>
       <br />
       <textarea value={csvData} onChange={handleCsvInputChange} placeholder="Paste CSV data here" rows={5} cols={50} />
@@ -128,6 +183,7 @@ const Controller = ({ children }: ControllerProps) => {
         <tbody>
           <tr>
             <th>CSV Date:</th>
+            <th>Type:</th>
             <th>Formated Date:</th>
             <th>Currecy Date:</th>
             <th>Currecy Rate:</th>
@@ -139,19 +195,40 @@ const Controller = ({ children }: ControllerProps) => {
           </tr>
           {rate.map((item, index) => (
             <tr key={index}>
-              <th>{item.initialDate}</th>
-              <th>{item.formatedDate}</th>
-              <th>{item.currecyDate}</th>
-              <th>{item.currecyRate}</th>
-              <th>{item.amount}</th>
-              <th>{item.amountFee}</th>
-              <th>{item.amountLocal}</th>
-              <th>{item.amountFeeLocal}</th>
-              <th>{item.amountFeeVat}</th>
+              <td>{item.initialDate}</td>
+              <td>{item.type}</td>
+              <td>{item.formatedDate}</td>
+              <td>{item.currecyDate}</td>
+              <td>{item.currecyRate}</td>
+              <td>{item.amount}</td>
+              <td>{item.amountFee}</td>
+              <td>{item.amountLocal}</td>
+              <td>{item.amountFeeLocal}</td>
+              <td>{item.amountFeeVat}</td>
             </tr>
           ))}
         </tbody>
       </table>
+      <div>
+        <p>
+          <b>Total Incum</b>: {totalData.amountOfIncum}
+        </p>
+        <p>
+          <b>Total Costs</b>: {totalData.amountOfCosts}
+        </p>
+        <p>
+          <b>Total Costs with Vat</b>: {totalData.amountOfCostsWithVat}
+        </p>
+        <p>
+          <b>Total to spend</b>: {totalData.ammoutClear}
+        </p>
+        <p>
+          <b>Total to spend and Vat</b>: {totalData.ammoutClearAndVat}
+        </p>
+        <p>
+          <b>Total Vat 23%</b>: {totalData.ammountOfFeeOfVat}
+        </p>
+      </div>
     </>
   );
 };
