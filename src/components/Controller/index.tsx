@@ -36,20 +36,18 @@ const Controller = ({ children }: ControllerProps) => {
 
   const fetchData = async (formatedDate: string) => {
     let currentDate = formatedDate;
-    let retryCount = 0;
+    const retryCount = 0;
 
     while (retryCount < 5) {
       try {
         const data = await getCurrecyRate(currentDate, formatedDate);
-        console.log(data);
-
-        setApiData({ ...data });
+        setApiData(data);
         break;
       } catch (error) {
         const subDay = subDays(parse(currentDate, 'yyyy-MM-dd', new Date()), 1);
 
         currentDate = formatedDate(subDay);
-        retryCount++;
+        retryCount + 1;
       }
     }
   };
@@ -64,6 +62,7 @@ const Controller = ({ children }: ControllerProps) => {
 
   useEffect(() => {
     if (hasMounted) {
+      console.log(apiData);
       setRate((prev) => {
         const newDateArray = prev.map((item) => {
           if (item.formatedDate === apiData.formatedDate) {
