@@ -53,7 +53,7 @@ const Controller = ({ children }: ControllerProps) => {
   const fetchData = async (formatedDate: string) => {
     let currentDate = formatedDate;
     const retryCount = 0;
-    while (retryCount < 5) {
+    while (retryCount < 6) {
       try {
         const data = await getCurrecyRate(currentDate, formatedDate);
         if (data && data.formatedDate) {
@@ -84,11 +84,17 @@ const Controller = ({ children }: ControllerProps) => {
         (item) => item.type === 'Fixed Price' || item.type === 'Hourly' || item.type === 'Bonus',
       );
 
+      const ifAditionalCosts = rate
+        .filter((item) => item.type === 'Membership Fee' || item.type === 'Withdrawal Fee')
+        .reduce((acc, currentValue) => acc + currentValue.amountLocal, 0);
+
+      console.log(ifAditionalCosts);
+
       const amountOfIncum = onlyPayments.reduce((acc, currentValue) => acc + currentValue.amountLocal, 0);
-      const amountOfCosts = rate.reduce((acc, currentValue) => acc + currentValue.amountFeeLocal, 0);
+      const amountOfCosts = rate.reduce((acc, currentValue) => acc + currentValue.amountFeeLocal, 0) + ifAditionalCosts;
       const amountOfCostsWithVat = rate.reduce(
         (acc, currentValue) => acc + currentValue.amountFeeLocal + currentValue.amountFeeVat,
-        0,
+        0 + ifAditionalCosts,
       );
 
       const ammountOfFeeOfVat = rate.reduce((acc, currentValue) => acc + currentValue.amountFeeVat, 0);
@@ -156,6 +162,7 @@ const Controller = ({ children }: ControllerProps) => {
           const filteredArray = flArr.map((obj) => ({
             initialDate: obj.Date,
             type: obj.Type,
+            description: obj.Description,
             formatedDate: handleDate(obj.Date),
             amount: Number(obj.Amount),
           }));
@@ -183,7 +190,7 @@ const Controller = ({ children }: ControllerProps) => {
         <tbody>
           <tr>
             <th>CSV Date:</th>
-            <th>Type:</th>
+            <th>Description:</th>
             <th>Formated Date:</th>
             <th>Currecy Date:</th>
             <th>Currecy Rate:</th>
@@ -196,7 +203,7 @@ const Controller = ({ children }: ControllerProps) => {
           {rate.map((item, index) => (
             <tr key={index}>
               <td>{item.initialDate}</td>
-              <td>{item.type}</td>
+              <td style={{ width: 200 }}>{item.description}</td>
               <td>{item.formatedDate}</td>
               <td>{item.currecyDate}</td>
               <td>{item.currecyRate}</td>
@@ -220,13 +227,13 @@ const Controller = ({ children }: ControllerProps) => {
           <b>Total Costs with Vat</b>: {totalData.amountOfCostsWithVat}
         </p>
         <p>
+          <b>Total Vat 23%</b>: {totalData.ammountOfFeeOfVat}
+        </p>
+        <p>
           <b>Total to spend</b>: {totalData.ammoutClear}
         </p>
         <p>
           <b>Total to spend and Vat</b>: {totalData.ammoutClearAndVat}
-        </p>
-        <p>
-          <b>Total Vat 23%</b>: {totalData.ammountOfFeeOfVat}
         </p>
       </div>
     </>
