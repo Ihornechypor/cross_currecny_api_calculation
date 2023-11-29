@@ -3,37 +3,12 @@ import { getCurrecyRate } from '../../api/getCurrecyRate';
 import 'react-datepicker/dist/react-datepicker.css';
 import { format, subDays, parse } from 'date-fns';
 import Papa from 'papaparse';
+import { reformatDate, updateSubDays, calculateLocalAmounts } from '../../helpers';
+import { API_DATE_FORMAT } from '../../consts';
 
 interface ControllerProps {
   children?: ReactNode;
 }
-
-const updateSubDays = (date: string, day: number) => subDays(parse(date, 'MMM d, yyyy', new Date()), day);
-
-const formatedDate = (date: string) => format(date, 'yyyy-MM-dd');
-
-const calculateLocalAmounts = (amount: number, rate: number, type: string) => {
-  let amountFee = +(amount * 0.1).toFixed(2);
-  const amountLocal = +(amount * rate).toFixed(2);
-  let amountFeeLocal = -Math.abs(+(amountLocal * 0.1).toFixed(2));
-  let amountFeeVat = -Math.abs(+(amountFeeLocal * 0.23).toFixed(2));
-  if (type === 'Withdrawal Fee') {
-    amountFee = 0;
-    amountFeeLocal = 0;
-    amountFeeVat = 0;
-  }
-  if (type === 'Membership Fee') {
-    amountFee = 0;
-    amountFeeVat = 0;
-    amountFeeLocal = +(amountLocal * 0.23).toFixed(2);
-  }
-  return {
-    amountFee,
-    amountLocal,
-    amountFeeLocal,
-    amountFeeVat,
-  };
-};
 
 const Controller = ({ children }: ControllerProps) => {
   const [hasMounted, setHasMounted] = useState(false);
@@ -63,19 +38,21 @@ const Controller = ({ children }: ControllerProps) => {
           console.error('Empty or invalid API response');
         }
       } catch (error) {
-        const subDay = subDays(parse(currentDate, 'yyyy-MM-dd', new Date()), 1);
+        const subDay = subDays(parse(currentDate, API_DATE_FORMAT, new Date()), 1);
 
-        currentDate = format(subDay, 'yyyy-MM-dd');
+        currentDate = reformatDate(subDay, API_DATE_FORMAT);
         retryCount + 1;
       }
     }
   };
 
-  const handleDate = (date: any) => {
+  const handleDate = (date: string) => {
     const prevDate = updateSubDays(date, 1);
-    fetchData(formatedDate(prevDate));
+    const dateForApi = reformatDate(prevDate, API_DATE_FORMAT);
 
-    return formatedDate(prevDate);
+    fetchData(dateForApi);
+
+    return dateForApi;
   };
 
   useEffect(() => {
@@ -87,8 +64,6 @@ const Controller = ({ children }: ControllerProps) => {
       const ifAditionalCosts = rate
         .filter((item) => item.type === 'Membership Fee' || item.type === 'Withdrawal Fee')
         .reduce((acc, currentValue) => acc + currentValue.amountLocal, 0);
-
-      console.log(ifAditionalCosts);
 
       const amountOfIncum = onlyPayments.reduce((acc, currentValue) => acc + currentValue.amountLocal, 0);
       const amountOfCosts = rate.reduce((acc, currentValue) => acc + currentValue.amountFeeLocal, 0) + ifAditionalCosts;
@@ -119,7 +94,8 @@ const Controller = ({ children }: ControllerProps) => {
     if (hasMounted) {
       if (apiData.length === rate.length) {
         const sortedByDays = apiData.sort(
-          (a, b) => parse(b.formatedDate, 'yyyy-MM-dd', new Date()) - parse(a.formatedDate, 'yyyy-MM-dd', new Date()),
+          (a, b) =>
+            parse(b.formatedDate, API_DATE_FORMAT, new Date()) - parse(a.formatedDate, API_DATE_FORMAT, new Date()),
         );
         const compairedArray = rate.map((item, index) => {
           return {
