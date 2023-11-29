@@ -15,7 +15,6 @@ interface CsvData {
   Date: string;
   Description: string;
   Amount: string;
-  // Add other properties if needed
 }
 
 interface RateItem {
@@ -23,20 +22,18 @@ interface RateItem {
   description: string;
   formatedDate: string;
   amount: number;
-  amountFee: number; // Assuming these properties exist
+  amountFee: number;
   amountLocal: number;
   amountFeeLocal: number;
   amountFeeVat: number;
-  currecyDate: string; // Add this property if needed
+  currecyDate: string;
   currecyRate: number;
   type: string;
-  // Add other properties if needed
 }
 
 interface ApiDataItem {
   formatedDate: string;
-  currecyRate: number; // Add this property if needed
-  // Add other properties if needed
+  currecyRate: number;
 }
 
 const Controller = ({ children }: ControllerProps) => {
