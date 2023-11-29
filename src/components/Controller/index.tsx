@@ -10,10 +10,39 @@ interface ControllerProps {
   children?: ReactNode;
 }
 
+interface CsvData {
+  Type: string;
+  Date: string;
+  Description: string;
+  Amount: string;
+  // Add other properties if needed
+}
+
+interface RateItem {
+  initialDate: string;
+  description: string;
+  formatedDate: string;
+  amount: number;
+  amountFee: number; // Assuming these properties exist
+  amountLocal: number;
+  amountFeeLocal: number;
+  amountFeeVat: number;
+  currecyDate: string; // Add this property if needed
+  currecyRate: number;
+  type: string;
+  // Add other properties if needed
+}
+
+interface ApiDataItem {
+  formatedDate: string;
+  currecyRate: number; // Add this property if needed
+  // Add other properties if needed
+}
+
 const Controller = ({ children }: ControllerProps) => {
   const [hasMounted, setHasMounted] = useState(false);
-  const [rate, setRate] = useState<never[]>([]);
-  const [apiData, setApiData] = useState<never[]>([]);
+  const [rate, setRate] = useState<RateItem[]>([]);
+  const [apiData, setApiData] = useState<ApiDataItem[]>([]);
   const [totalData, setTotalData] = useState({
     amountOfIncum: 0,
     amountOfCosts: 0,
@@ -27,7 +56,7 @@ const Controller = ({ children }: ControllerProps) => {
 
   const fetchData = async (formatedDate: string): Promise<void> => {
     let currentDate = formatedDate;
-    const retryCount = 0;
+    let retryCount = 0; // Fix: Assign the incremented value to retryCount
     while (retryCount < 6) {
       try {
         const data = await getCurrecyRate(currentDate, formatedDate);
@@ -41,12 +70,12 @@ const Controller = ({ children }: ControllerProps) => {
         const subDay = subDays(parse(currentDate, API_DATE_FORMAT, new Date()), 1);
 
         currentDate = reformatDate(subDay, API_DATE_FORMAT);
-        retryCount + 1;
+        retryCount += 1; // Fix: Increment retryCount
       }
     }
   };
 
-  const handleDate = (date: string) => {
+  const handleDate = (date: string): string => {
     const prevDate = updateSubDays(date, 1, CSV_DATE_FORMAT);
     const dateForApi = reformatDate(prevDate, API_DATE_FORMAT);
 
@@ -61,15 +90,16 @@ const Controller = ({ children }: ControllerProps) => {
         (item) => item.type === 'Fixed Price' || item.type === 'Hourly' || item.type === 'Bonus',
       );
 
-      const ifAditionalCosts = rate
+      const ifAdditionalCosts = rate
         .filter((item) => item.type === 'Membership Fee' || item.type === 'Withdrawal Fee')
         .reduce((acc, currentValue) => acc + currentValue.amountLocal, 0);
 
       const amountOfIncum = onlyPayments.reduce((acc, currentValue) => acc + currentValue.amountLocal, 0);
-      const amountOfCosts = rate.reduce((acc, currentValue) => acc + currentValue.amountFeeLocal, 0) + ifAditionalCosts;
+      const amountOfCosts =
+        rate.reduce((acc, currentValue) => acc + currentValue.amountFeeLocal, 0) + ifAdditionalCosts;
       const amountOfCostsWithVat = rate.reduce(
         (acc, currentValue) => acc + currentValue.amountFeeLocal + currentValue.amountFeeVat,
-        0 + ifAditionalCosts,
+        0 + ifAdditionalCosts,
       );
 
       const ammountOfFeeOfVat = rate.reduce((acc, currentValue) => acc + currentValue.amountFeeVat, 0);
@@ -88,21 +118,33 @@ const Controller = ({ children }: ControllerProps) => {
     } else {
       setHasMounted(true);
     }
-  }, [rate]);
+  }, [rate, hasMounted]);
 
   useEffect(() => {
     if (hasMounted) {
       if (apiData.length === rate.length) {
-        const sortedByDays = apiData.sort(
+        const sortedByDays = [...apiData].sort(
           (a, b) =>
             parse(b.formatedDate, API_DATE_FORMAT, new Date()) - parse(a.formatedDate, API_DATE_FORMAT, new Date()),
         );
         const compairedArray = rate.map((item, index) => {
-          return {
-            ...item,
-            ...sortedByDays[index],
-            ...calculateLocalAmounts(item.amount, sortedByDays[index].currecyRate, item.type),
-          };
+          const currentDate = parse(sortedByDays[index].formatedDate, API_DATE_FORMAT, new Date());
+          const amount = item.amount;
+          const currecyRate = sortedByDays[index].currecyRate;
+          const type = item.type;
+
+          // Check if the properties have valid values
+          if (currentDate && !isNaN(amount) && !isNaN(currecyRate)) {
+            return {
+              ...item,
+              ...sortedByDays[index],
+              ...calculateLocalAmounts(amount, currecyRate, type),
+            };
+          } else {
+            // Handle the case where one of the properties is invalid
+            console.error('Invalid data for calculation:', item, sortedByDays[index]);
+            return item;
+          }
         });
 
         setRate(compairedArray);
@@ -110,7 +152,7 @@ const Controller = ({ children }: ControllerProps) => {
     } else {
       setHasMounted(true);
     }
-  }, [apiData]);
+  }, [rate, apiData, hasMounted]);
 
   const handleReset = () => {
     setRate([]);
@@ -122,7 +164,7 @@ const Controller = ({ children }: ControllerProps) => {
 
   const parseCSVToArray = () => {
     try {
-      Papa.parse(csvData, {
+      Papa.parse<CsvData>(csvData, {
         complete: (result) => {
           const flArr = result.data.filter(
             (item) =>
@@ -153,7 +195,7 @@ const Controller = ({ children }: ControllerProps) => {
   return (
     <>
       <p>
-        Currensy: <br />
+        Currency: <br />
       </p>
       <br />
       <textarea value={csvData} onChange={handleCsvInputChange} placeholder="Paste CSV data here" rows={5} cols={50} />
@@ -166,8 +208,8 @@ const Controller = ({ children }: ControllerProps) => {
             <th>CSV Date:</th>
             <th>Description:</th>
             <th>Formated Date:</th>
-            <th>Currecy Date:</th>
-            <th>Currecy Rate:</th>
+            <th>Currency Date:</th>
+            <th>Currency Rate:</th>
             <th>Amount in USD:</th>
             <th>Amount fee in USD:</th>
             <th>Amount in PLN:</th>
@@ -213,4 +255,5 @@ const Controller = ({ children }: ControllerProps) => {
     </>
   );
 };
+
 export default Controller;
