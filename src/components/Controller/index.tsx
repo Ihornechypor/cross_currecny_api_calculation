@@ -1,10 +1,10 @@
 import { ReactNode, useState, useEffect } from 'react';
 import { getCurrecyRate } from '../../api/getCurrecyRate';
 import 'react-datepicker/dist/react-datepicker.css';
-import { format, subDays, parse } from 'date-fns';
+import { subDays, parse } from 'date-fns';
 import Papa from 'papaparse';
 import { reformatDate, updateSubDays, calculateLocalAmounts } from '../../helpers';
-import { API_DATE_FORMAT } from '../../consts';
+import { API_DATE_FORMAT, CSV_DATE_FORMAT } from '../../consts';
 
 interface ControllerProps {
   children?: ReactNode;
@@ -47,7 +47,7 @@ const Controller = ({ children }: ControllerProps) => {
   };
 
   const handleDate = (date: string) => {
-    const prevDate = updateSubDays(date, 1);
+    const prevDate = updateSubDays(date, 1, CSV_DATE_FORMAT);
     const dateForApi = reformatDate(prevDate, API_DATE_FORMAT);
 
     fetchData(dateForApi);

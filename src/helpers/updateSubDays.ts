@@ -1,3 +1,3 @@
 import { subDays, parse } from 'date-fns';
 
-export const updateSubDays = (date: string, day: number) => subDays(parse(date, 'MMM d, yyyy', new Date()), day);
+export const updateSubDays = (date: string, day: number, type: string) => subDays(parse(date, type, new Date()), day);
