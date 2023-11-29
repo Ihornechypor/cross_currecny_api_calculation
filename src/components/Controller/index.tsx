@@ -12,8 +12,8 @@ interface ControllerProps {
 
 const Controller = ({ children }: ControllerProps) => {
   const [hasMounted, setHasMounted] = useState(false);
-  const [rate, setRate] = useState([]);
-  const [apiData, setApiData] = useState([]);
+  const [rate, setRate] = useState<never[]>([]);
+  const [apiData, setApiData] = useState<never[]>([]);
   const [totalData, setTotalData] = useState({
     amountOfIncum: 0,
     amountOfCosts: 0,
@@ -23,9 +23,9 @@ const Controller = ({ children }: ControllerProps) => {
     ammoutClearAndVat: 0,
   });
   // csv
-  const [csvData, setCsvData] = useState();
+  const [csvData, setCsvData] = useState<string>('');
 
-  const fetchData = async (formatedDate: string) => {
+  const fetchData = async (formatedDate: string): Promise<void> => {
     let currentDate = formatedDate;
     const retryCount = 0;
     while (retryCount < 6) {
@@ -118,9 +118,7 @@ const Controller = ({ children }: ControllerProps) => {
     console.clear();
   };
 
-  const handleCsvInputChange = (e) => {
-    setCsvData(e.target.value);
-  };
+  const handleCsvInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => setCsvData(e.target.value);
 
   const parseCSVToArray = () => {
     try {
