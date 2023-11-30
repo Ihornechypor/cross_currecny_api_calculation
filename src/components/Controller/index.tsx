@@ -122,7 +122,8 @@ const Controller = ({ children }: ControllerProps) => {
       if (apiData.length === rate.length) {
         const sortedByDays = [...apiData].sort(
           (a, b) =>
-            parse(b.formatedDate, API_DATE_FORMAT, new Date()) - parse(a.formatedDate, API_DATE_FORMAT, new Date()),
+            parse(b.formatedDate, API_DATE_FORMAT, new Date()).getTime() -
+            parse(a.formatedDate, API_DATE_FORMAT, new Date()).getTime(),
         );
         const compairedArray = rate.map((item, index) => {
           const currentDate = parse(sortedByDays[index].formatedDate, API_DATE_FORMAT, new Date());
@@ -149,7 +150,7 @@ const Controller = ({ children }: ControllerProps) => {
     } else {
       setHasMounted(true);
     }
-  }, [rate, apiData, hasMounted]);
+  }, [apiData]);
 
   const handleReset = () => {
     setRate([]);
@@ -178,6 +179,12 @@ const Controller = ({ children }: ControllerProps) => {
             description: obj.Description,
             formatedDate: handleDate(obj.Date),
             amount: Number(obj.Amount),
+            amountFee: 0,
+            amountLocal: 0,
+            amountFeeLocal: 0,
+            amountFeeVat: 0,
+            currecyDate: '',
+            currecyRate: 0,
           }));
 
           setRate(filteredArray);
