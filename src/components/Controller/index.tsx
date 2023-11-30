@@ -1,14 +1,9 @@
-import { ReactNode, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { getCurrecyRate } from '../../api/getCurrecyRate';
-import 'react-datepicker/dist/react-datepicker.css';
 import { subDays, parse } from 'date-fns';
 import Papa from 'papaparse';
 import { reformatDate, updateSubDays, calculateLocalAmounts } from '../../helpers';
 import { API_DATE_FORMAT, CSV_DATE_FORMAT } from '../../consts';
-
-interface ControllerProps {
-  children?: ReactNode;
-}
 
 interface CsvData {
   Type: string;
@@ -36,7 +31,7 @@ interface ApiDataItem {
   currecyRate: number;
 }
 
-const Controller = ({ children }: ControllerProps) => {
+const Controller = () => {
   const [hasMounted, setHasMounted] = useState(false);
   const [rate, setRate] = useState<RateItem[]>([]);
   const [apiData, setApiData] = useState<ApiDataItem[]>([]);
