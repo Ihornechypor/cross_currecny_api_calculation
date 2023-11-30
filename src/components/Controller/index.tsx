@@ -153,7 +153,7 @@ const Controller = () => {
     console.clear();
   };
 
-  const handleCsvInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => setCsvData(e.target.value);
+  const handleCsvInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => setCsvData(() => e.target.value);
 
   const parseCSVToArray = () => {
     try {
@@ -185,6 +185,9 @@ const Controller = () => {
           setRate(filteredArray);
         },
         header: true,
+        transformHeader: function (h) {
+          return h.trim();
+        },
       });
     } catch (error) {
       console.error('Error parsing CSV:', error);
