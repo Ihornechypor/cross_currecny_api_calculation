@@ -1,8 +1,8 @@
-# Tool to calculate unregistred entrepreneurship for Poland
+# Tool to calculate unregistred entrepreneurship for Poland for Upwork users
 
 ## Introduction
 
-This tool will help you to calculate unregistred enterpro entrepreneurship for Poland. For 2023 it is 2700zl.
+This tool will help you to calculate unregistred entrepreneurship for Poland Upwork users. For 2023 it is 2700zl.
 
 ### How to use
 
@@ -23,7 +23,7 @@ $ npm run dev
 
 ## Wprowadzenie
 
-To narzędzie pomoże Ci obliczyć przedsiębiorczość niezarejestrowaną w Polsce. Na rok 2023 wynosi ona 2700 zł.
+To narzędzie pomoże Ci obliczyć działalności niezarejestrowaną w Polsce dla uzytkowników Upworku. Na rok 2023 wynosi ona 2700 zł.
 
 ### Jak korzystać
 
