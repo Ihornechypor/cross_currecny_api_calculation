@@ -1,6 +1,6 @@
 import { differenceInDays, endOfYear, startOfYear } from 'date-fns';
-import { minusDay, minusMonth, reformatDate, toDateType } from '..';
-import { API_DATE_FORMAT, MAX_API_DATE_RANGE, MAX_MINUS_DAYS, MAX_MINUS_MONTH } from '../../consts';
+import { minusDay, reformatDate, toDateType } from '..';
+import { API_DATE_FORMAT, MAX_API_DATE_RANGE, MAX_MINUS_DAYS } from '../../consts';
 import { RateItem } from '../../types';
 
 export const getDateRange = (rate: RateItem[]) => {
