@@ -48,7 +48,7 @@ const Controller = () => {
     const prevDate = updateSubDays(date, 1, CSV_DATE_FORMAT);
     const dateForApi = reformatDate(prevDate, API_DATE_FORMAT);
 
-    // fetchData(dateForApi);
+    fetchData(dateForApi);
 
     return dateForApi;
   };
