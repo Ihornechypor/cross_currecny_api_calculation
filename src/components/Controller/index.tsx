@@ -62,6 +62,7 @@ const Controller = () => {
               item.Type === 'Hourly' ||
               item.Type === 'Bonus' ||
               item.Type === 'Membership Fee' ||
+              item.Type === 'Miscellaneous' ||
               item.Type === 'Withdrawal Fee',
           );
 
