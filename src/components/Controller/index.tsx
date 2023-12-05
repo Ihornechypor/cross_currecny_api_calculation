@@ -140,7 +140,11 @@ const Controller = () => {
   useEffect(() => {
     if (hasMounted) {
       const onlyPayments = rates.filter(
-        (item) => item.type === 'Fixed Price' || item.type === 'Hourly' || item.type === 'Bonus',
+        (item) =>
+          item.type === 'Fixed Price' ||
+          item.type === 'Hourly' ||
+          item.type === 'Bonus' ||
+          item.type === 'Miscellaneous',
       );
 
       const ifAdditionalCosts = rates
