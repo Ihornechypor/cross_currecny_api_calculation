@@ -10,6 +10,21 @@ function App() {
       <Main>
         <Section>
           <h1>Paste csv code inside textarea</h1>
+          <br />
+          <h2>How to use</h2>
+          <ul>
+            <li>
+              download csv from (
+              <a href="https://www.upwork.com/nx/payments/reports/transaction-history/">
+                https://www.upwork.com/nx/payments/reports/transaction-history/
+              </a>
+              )
+            </li>
+            <li>open csv in editor or notepad</li>
+            <li>paste csv to input textarea</li>
+            <li>click load csv</li>
+          </ul>
+          <br />
           <Controller />
         </Section>
       </Main>
