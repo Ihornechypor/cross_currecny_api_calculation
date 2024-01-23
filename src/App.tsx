@@ -9,7 +9,7 @@ function App() {
       <GlobalStyle />
       <Main>
         <Section>
-          <h1>Paste csv code inside textarea</h1>
+          <h1>his tool will help you to calculate entrepreneurship for Poland Upwork users.</h1>
           <br />
           <h2>How to use</h2>
           <ul>
