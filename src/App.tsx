@@ -20,6 +20,7 @@ function App() {
               </a>
               )
             </li>
+            <li>choose if you paying fee(vat) or not</li>
             <li>open csv in editor or notepad</li>
             <li>paste csv to input textarea</li>
             <li>click load csv</li>

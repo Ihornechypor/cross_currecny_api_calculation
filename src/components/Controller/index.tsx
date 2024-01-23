@@ -24,6 +24,7 @@ const Controller = () => {
   });
   const [apiRates, setApiRate] = useState<ApiRates[]>([{ effectiveDate: '', mid: 0 }]);
   const [csvData, setCsvData] = useState<string>('');
+  const [hasVat, setHasVat] = useState<boolean>(true);
 
   const handleDate = (date: string): string => {
     const prevDate = minusDay(date, 1, CSV_DATE_FORMAT);
@@ -51,6 +52,7 @@ const Controller = () => {
   };
 
   const handleCsvInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => setCsvData(() => e.target.value);
+  const handleIsPayingVat = () => setHasVat((prev) => !prev);
 
   const parseCSVToArray = () => {
     try {
@@ -109,7 +111,7 @@ const Controller = () => {
           ...item,
           currecyDate,
           currecyRate: rate,
-          ...calculateLocalAmounts(item.amount, rate, item.type),
+          ...calculateLocalAmounts(item.amount, rate, item.type, hasVat),
         };
       });
 
@@ -155,6 +157,7 @@ const Controller = () => {
 
       const amountOfCosts =
         rates.reduce((acc, currentValue) => acc + currentValue.amountFeeLocal, 0) + ifAdditionalCosts;
+
       const amountOfCostsWithVat = rates.reduce(
         (acc, currentValue) => acc + currentValue.amountFeeLocal + currentValue.amountFeeVat,
         0 + ifAdditionalCosts,
@@ -180,8 +183,13 @@ const Controller = () => {
 
   return (
     <>
+      <Button onClick={handleIsPayingVat} disabled={dataFetched}>
+        Paying vat?
+      </Button>
+      &nbsp;
+      {hasVat ? <p style={{ color: 'red' }}>You paying Vat</p> : <p style={{ color: 'red' }}>You not paying Vat</p>}
+      <br />
       <textarea value={csvData} onChange={handleCsvInputChange} placeholder="Paste CSV data here" rows={5} cols={50} />
-
       <div>
         <Button onClick={parseCSVToArray} disabled={dataFetched}>
           Load csv
