@@ -22,7 +22,7 @@ export const getDateRange = (rate: RateItem[]) => {
   } else {
     return [
       {
-        dateStart: reformatDate(minusDay(dateStart, MAX_MINUS_DAYS, API_DATE_FORMAT), API_DATE_FORMAT),
+        dateStart: reformatDate(minusDay(dateStart, 5, API_DATE_FORMAT), API_DATE_FORMAT),
         dateEnd,
       },
     ];
